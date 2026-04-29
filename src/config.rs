@@ -22,6 +22,19 @@ impl DotRc {
         })
     }
 
+    /// Creates a new DotRc with default settings (target = ~/.dot/) without writing to disk.
+    pub fn new_default(path: &Path) -> Self {
+        let dotrc_content = "\
+[settings.target]\n\
+win = '~/.dot/'\n\
+unix = '~/.dot/'\n";
+        let data: toml::Table = toml::from_str(dotrc_content).expect("valid default dotrc");
+        Self {
+            path: path.to_path_buf(),
+            data,
+        }
+    }
+
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
         let content = toml::to_string(&self.data)?;
         fs::write(&self.path, content)?;
