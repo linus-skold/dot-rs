@@ -2,18 +2,55 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub const DOTRC_FILENAME: &str = ".dotrc";
+pub const ENTRIES_FILENAME: &str = "entries.toml";
 
-/// Returns the canonical path to the `.dotrc` file: `~/.dotrc`.
+/// Returns `~/.dotrc`.
 pub fn dotrc_path() -> PathBuf {
     expand_tilde(&format!("~/{}", DOTRC_FILENAME))
 }
 
+/// Reads and writes `~/.dotrc`, which contains a single line: the target folder path.
 pub struct DotRc {
+    pub path: PathBuf,
+    /// Expanded target directory (e.g. `C:\Users\foo\.dot`).
+    pub target: PathBuf,
+    raw: String,
+}
+
+impl DotRc {
+    pub fn load(path: &Path) -> Result<Self, Box<dyn std::error::Error>> {
+        let raw = fs::read_to_string(path)?.trim().to_string();
+        if raw.is_empty() {
+            return Err("~/.dotrc is empty — expected a target path".into());
+        }
+        let target = expand_tilde(&raw);
+        Ok(Self { path: path.to_path_buf(), target, raw })
+    }
+
+    pub fn new_default(path: &Path) -> Self {
+        let raw = "~/.dot/".to_string();
+        let target = expand_tilde(&raw);
+        Self { path: path.to_path_buf(), target, raw }
+    }
+
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        fs::write(&self.path, &self.raw)?;
+        Ok(())
+    }
+
+    /// Path to the entries file inside the target folder.
+    pub fn entries_path(&self) -> PathBuf {
+        self.target.join(ENTRIES_FILENAME)
+    }
+}
+
+/// Reads and writes `<target>/entries.toml`, tracking name -> source path mappings.
+pub struct DotEntries {
     pub path: PathBuf,
     data: toml::Table,
 }
 
-impl DotRc {
+impl DotEntries {
     pub fn load(path: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let content = if path.exists() {
             fs::read_to_string(path)?
@@ -21,51 +58,28 @@ impl DotRc {
             String::new()
         };
         let data: toml::Table = toml::from_str(&content)?;
-        Ok(Self {
-            path: path.to_path_buf(),
-            data,
-        })
-    }
-
-    /// Creates a new DotRc with default settings (target = ~/.dot/) without writing to disk.
-    pub fn new_default(path: &Path) -> Self {
-        let dotrc_content = "\
-[settings.target]\n\
-win = '~/.dot/'\n\
-unix = '~/.dot/'\n";
-        let data: toml::Table = toml::from_str(dotrc_content).expect("valid default dotrc");
-        Self {
-            path: path.to_path_buf(),
-            data,
-        }
+        Ok(Self { path: path.to_path_buf(), data })
     }
 
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let content = toml::to_string(&self.data)?;
-        fs::write(&self.path, content)?;
+        fs::write(&self.path, toml::to_string(&self.data)?)?;
         Ok(())
-    }
-
-    /// Returns the target base directory for the current OS, expanding `~`.
-    pub fn get_target(&self) -> Option<PathBuf> {
-        let settings = self.data.get("settings")?.as_table()?;
-        let target = settings.get("target")?.as_table()?;
-
-        #[cfg(target_os = "windows")]
-        let key = "win";
-        #[cfg(not(target_os = "windows"))]
-        let key = "unix";
-
-        let raw = target.get(key)?.as_str()?;
-        Some(expand_tilde(raw))
     }
 
     pub fn is_tracked(&self, name: &str) -> bool {
         self.data.contains_key(name)
     }
 
-    /// Returns all tracked entries as (name, expanded_source_path) pairs,
-    /// skipping the reserved "settings" key.
+    pub fn add_entry(&mut self, name: &str, source_path: &str) {
+        let mut entry = toml::Table::new();
+        #[cfg(target_os = "windows")]
+        entry.insert("win".to_string(), toml::Value::String(source_path.to_string()));
+        #[cfg(not(target_os = "windows"))]
+        entry.insert("unix".to_string(), toml::Value::String(source_path.to_string()));
+        self.data.insert(name.to_string(), toml::Value::Table(entry));
+    }
+
+    /// Returns all entries as `(name, expanded_source_path)` pairs.
     pub fn get_entries(&self) -> Vec<(String, PathBuf)> {
         #[cfg(target_os = "windows")]
         let os_key = "win";
@@ -74,25 +88,11 @@ unix = '~/.dot/'\n";
 
         self.data
             .iter()
-            .filter(|(key, _)| *key != "settings")
             .filter_map(|(name, value)| {
                 let raw = value.as_table()?.get(os_key)?.as_str()?;
                 Some((name.clone(), expand_tilde(raw)))
             })
             .collect()
-    }
-
-    /// Adds an entry recording where the folder lives on this OS.
-    pub fn add_entry(&mut self, name: &str, source_path: &str) {
-        let mut entry = toml::Table::new();
-
-        #[cfg(target_os = "windows")]
-        entry.insert("win".to_string(), toml::Value::String(source_path.to_string()));
-        #[cfg(not(target_os = "windows"))]
-        entry.insert("unix".to_string(), toml::Value::String(source_path.to_string()));
-
-        self.data
-            .insert(name.to_string(), toml::Value::Table(entry));
     }
 }
 

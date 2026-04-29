@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::config::{dotrc_path, expand_tilde, DotRc};
+use crate::config::{dotrc_path, expand_tilde, DotEntries, DotRc, ENTRIES_FILENAME};
 
 pub fn init(url: Option<&str>, path: Option<&str>) {
     match url {
@@ -14,7 +14,7 @@ pub fn init(url: Option<&str>, path: Option<&str>) {
 fn init_local(path: Option<&str>) {
     let dest = match path {
         Some(p) => expand_tilde(p),
-        None => std::env::current_dir().expect("failed to get current dir"),
+        None => expand_tilde("~/.dot"),
     };
 
     if !dest.exists() {
@@ -25,7 +25,8 @@ fn init_local(path: Option<&str>) {
         println!("created {}", dest.display());
     }
 
-    create_dot_home_and_dotrc(&dest);
+    git_init(&dest);
+    create_dotrc_and_entries(&dest);
 }
 
 fn init_from_url(url: &str, path: Option<&str>) {
@@ -39,32 +40,35 @@ fn init_from_url(url: &str, path: Option<&str>) {
     println!("cloning {} -> {}", url, dest.display());
     git_clone(url, &dest);
 
-    create_dot_home_and_dotrc(&dest);
+    create_dotrc_and_entries(&dest);
     println!("done — dotfiles repo ready at {}", dest.display());
 }
 
-fn create_dot_home_and_dotrc(_dest: &PathBuf) {
-    // Create ~/.dot/
-    let dot_home = expand_tilde("~/.dot");
-    if !dot_home.exists() {
-        fs::create_dir_all(&dot_home).unwrap_or_else(|e| {
-            eprintln!("error: failed to create {}: {}", dot_home.display(), e);
-            std::process::exit(1);
-        });
-        println!("created {}", dot_home.display());
-    }
-
-    // Write ~/.dotrc if not already present
+fn create_dotrc_and_entries(target: &PathBuf) {
+    // Write ~/.dotrc (single line: path to target folder)
     let dotrc_path = dotrc_path();
     if dotrc_path.exists() {
-        println!("~/.dotrc already present — skipping creation");
+        println!("~/.dotrc already present — skipping");
     } else {
-        let dotrc = DotRc::new_default(&dotrc_path);
-        dotrc.save().unwrap_or_else(|e| {
+        // Store the raw unexpanded path so it stays portable
+        let raw = format!("{}/", target.display());
+        DotRc::new_default(&dotrc_path).save().unwrap_or_else(|e| {
             eprintln!("error: failed to write ~/.dotrc: {}", e);
             std::process::exit(1);
         });
-        println!("created {}", dotrc_path.display());
+        println!("created ~/.dotrc -> {}", raw);
+    }
+
+    // Create entries.toml inside target if not present
+    let entries_path = target.join(ENTRIES_FILENAME);
+    if entries_path.exists() {
+        println!("{} already present — skipping", entries_path.display());
+    } else {
+        DotEntries::load(&entries_path).and_then(|e| e.save()).unwrap_or_else(|e| {
+            eprintln!("error: failed to create {}: {}", entries_path.display(), e);
+            std::process::exit(1);
+        });
+        println!("created {}", entries_path.display());
     }
 }
 
@@ -72,7 +76,6 @@ fn resolve_dest(url: &str, path: Option<&str>) -> PathBuf {
     if let Some(p) = path {
         return expand_tilde(p);
     }
-    // Derive repo name from URL: strip trailing `.git`, take last path segment.
     let name = url
         .trim_end_matches('/')
         .rsplit('/')
@@ -82,6 +85,27 @@ fn resolve_dest(url: &str, path: Option<&str>) -> PathBuf {
     std::env::current_dir()
         .expect("failed to get current dir")
         .join(name)
+}
+
+fn git_init(dest: &PathBuf) {
+    let git_dir = dest.join(".git");
+    if git_dir.exists() {
+        println!("git repo already present — skipping git init");
+        return;
+    }
+
+    let status = Command::new("git")
+        .args(["-C", dest.to_str().expect("non-UTF-8 path"), "init", "-b", "main"])
+        .status()
+        .unwrap_or_else(|e| {
+            eprintln!("error: failed to run git: {}", e);
+            std::process::exit(1);
+        });
+
+    if !status.success() {
+        eprintln!("error: git init failed");
+        std::process::exit(1);
+    }
 }
 
 fn git_clone(url: &str, dest: &PathBuf) {
