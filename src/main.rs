@@ -13,7 +13,7 @@ fn main() {
         cli::Commands::Apply => println!("apply: not yet implemented"),
         cli::Commands::Diff => println!("diff: not yet implemented"),
         cli::Commands::Push => println!("push: not yet implemented"),
-        cli::Commands::Init => println!("init: not yet implemented"),
+        cli::Commands::Init { url, path } => commands::init::init(&url, path.as_deref()),
     }
 }
 
