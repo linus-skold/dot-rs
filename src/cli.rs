@@ -26,11 +26,11 @@ pub enum Commands {
     Apply,
     Diff,
     Push,
-    /// Initialize a dotfiles repo from a git URL
+    /// Initialize a dotfiles repo, optionally from a git URL
     Init {
-        /// Git repository URL to clone
-        url: String,
-        /// Where to clone the repo (defaults to ./<repo-name>)
+        /// Git repository URL to clone (omit to just create local config)
+        url: Option<String>,
+        /// Where to clone the repo or create local config (defaults to ./<repo-name> or current dir)
         #[arg(short, long)]
         path: Option<String>,
     },
