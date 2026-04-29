@@ -1,27 +1,20 @@
-use crate::config::{DotRc, DOTRC_FILENAME};
+use crate::config::{dotrc_path, DotRc};
 
 pub fn apply() {
-    let dotrc_path = std::env::current_dir()
-        .expect("failed to get current dir")
-        .join(DOTRC_FILENAME);
-
-    let dotrc = DotRc::load(&dotrc_path).unwrap_or_else(|e| {
-        eprintln!("error: failed to load {}: {}", DOTRC_FILENAME, e);
+    let dotrc = DotRc::load(&dotrc_path()).unwrap_or_else(|e| {
+        eprintln!("error: failed to load ~/.dotrc: {}", e);
         std::process::exit(1);
     });
 
     let target_base = dotrc.get_target().unwrap_or_else(|| {
-        eprintln!(
-            "error: no target configured in {}. Add [settings] with target.win/unix.",
-            DOTRC_FILENAME
-        );
+        eprintln!("error: no target configured in ~/.dotrc. Add [settings] with target.win/unix.");
         std::process::exit(1);
     });
 
     let entries = dotrc.get_entries();
 
     if entries.is_empty() {
-        println!("nothing to apply — no entries configured in {}", DOTRC_FILENAME);
+        println!("nothing to apply — no entries configured in ~/.dotrc");
         return;
     }
 

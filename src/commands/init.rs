@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::config::{expand_tilde, DotRc, DOTRC_FILENAME};
+use crate::config::{dotrc_path, expand_tilde, DotRc};
 
 pub fn init(url: Option<&str>, path: Option<&str>) {
     match url {
@@ -43,7 +43,7 @@ fn init_from_url(url: &str, path: Option<&str>) {
     println!("done — dotfiles repo ready at {}", dest.display());
 }
 
-fn create_dot_home_and_dotrc(dest: &PathBuf) {
+fn create_dot_home_and_dotrc(_dest: &PathBuf) {
     // Create ~/.dot/
     let dot_home = expand_tilde("~/.dot");
     if !dot_home.exists() {
@@ -54,14 +54,14 @@ fn create_dot_home_and_dotrc(dest: &PathBuf) {
         println!("created {}", dot_home.display());
     }
 
-    // Write .dotrc if not already present
-    let dotrc_path = dest.join(DOTRC_FILENAME);
+    // Write ~/.dotrc if not already present
+    let dotrc_path = dotrc_path();
     if dotrc_path.exists() {
-        println!(".dotrc already present — skipping creation");
+        println!("~/.dotrc already present — skipping creation");
     } else {
         let dotrc = DotRc::new_default(&dotrc_path);
         dotrc.save().unwrap_or_else(|e| {
-            eprintln!("error: failed to write {}: {}", dotrc_path.display(), e);
+            eprintln!("error: failed to write ~/.dotrc: {}", e);
             std::process::exit(1);
         });
         println!("created {}", dotrc_path.display());

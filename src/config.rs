@@ -3,6 +3,11 @@ use std::path::{Path, PathBuf};
 
 pub const DOTRC_FILENAME: &str = ".dotrc";
 
+/// Returns the canonical path to the `.dotrc` file: `~/.dotrc`.
+pub fn dotrc_path() -> PathBuf {
+    expand_tilde(&format!("~/{}", DOTRC_FILENAME))
+}
+
 pub struct DotRc {
     pub path: PathBuf,
     data: toml::Table,
