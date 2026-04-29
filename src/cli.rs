@@ -26,6 +26,8 @@ pub enum Commands {
     Apply,
     Diff,
     Push,
+    /// Sync tracked configs from their source locations into the dotfiles folder
+    Sync,
     /// Initialize a dotfiles repo, optionally from a git URL
     Init {
         /// Git repository URL to clone (omit to just create local config)

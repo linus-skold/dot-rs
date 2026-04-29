@@ -59,6 +59,24 @@ unix = '~/.dot/'\n";
         self.data.contains_key(name)
     }
 
+    /// Returns all tracked entries as (name, expanded_source_path) pairs,
+    /// skipping the reserved "settings" key.
+    pub fn get_entries(&self) -> Vec<(String, PathBuf)> {
+        #[cfg(target_os = "windows")]
+        let os_key = "win";
+        #[cfg(not(target_os = "windows"))]
+        let os_key = "unix";
+
+        self.data
+            .iter()
+            .filter(|(key, _)| *key != "settings")
+            .filter_map(|(name, value)| {
+                let raw = value.as_table()?.get(os_key)?.as_str()?;
+                Some((name.clone(), expand_tilde(raw)))
+            })
+            .collect()
+    }
+
     /// Adds an entry recording where the folder lives on this OS.
     pub fn add_entry(&mut self, name: &str, source_path: &str) {
         let mut entry = toml::Table::new();
