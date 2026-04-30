@@ -1,4 +1,4 @@
-use crate::config::{collapse_home, dotrc_path, DotEntries, DotRc, expand_tilde};
+use crate::config::{collapse_home, expand_tilde, resolve_target, DotEntries, ENTRIES_FILENAME};
 
 pub fn add(path: &str, name: Option<&str>, raw: bool) {
     let source = expand_tilde(path);
@@ -18,12 +18,8 @@ pub fn add(path: &str, name: Option<&str>, raw: bool) {
             std::process::exit(1);
         });
 
-    let dotrc = DotRc::load(&dotrc_path()).unwrap_or_else(|e| {
-        eprintln!("error: failed to load ~/.dotrc: {}", e);
-        std::process::exit(1);
-    });
-
-    let dest = dotrc.target.join(&entry_name);
+    let target = resolve_target();
+    let dest = target.join(&entry_name);
 
     if let Err(e) = super::copy_entry(&source, &dest) {
         eprintln!("error: failed to copy '{}' to '{}': {}", source.display(), dest.display(), e);
@@ -35,7 +31,8 @@ pub fn add(path: &str, name: Option<&str>, raw: bool) {
         return;
     }
 
-    let mut entries = DotEntries::load(&dotrc.entries_path()).unwrap_or_else(|e| {
+    let entries_path = target.join(ENTRIES_FILENAME);
+    let mut entries = DotEntries::load(&entries_path).unwrap_or_else(|e| {
         eprintln!("error: failed to load entries.toml: {}", e);
         std::process::exit(1);
     });

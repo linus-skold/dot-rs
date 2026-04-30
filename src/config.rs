@@ -9,7 +9,24 @@ pub fn dotrc_path() -> PathBuf {
     expand_tilde(&format!("~/{}", DOTRC_FILENAME))
 }
 
-/// Reads and writes `~/.dotrc`, which contains a single line: the target folder path.
+/// Resolves the dotfiles target directory using this priority:
+/// 1. `DOTCONF` environment variable (if set)
+/// 2. `~/.dotrc` file (if present)
+/// 3. Default: `~/.dot`
+pub fn resolve_target() -> PathBuf {
+    if let Ok(val) = std::env::var("DOTCONF") {
+        return expand_tilde(val.trim());
+    }
+    let rc = dotrc_path();
+    if rc.exists() {
+        if let Ok(dotrc) = DotRc::load(&rc) {
+            return dotrc.target;
+        }
+    }
+    expand_tilde("~/.dot")
+}
+
+
 pub struct DotRc {
     pub path: PathBuf,
     /// Expanded target directory (e.g. `C:\Users\foo\.dot`).

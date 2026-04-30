@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::config::{dotrc_path, expand_tilde, DotEntries, DotRc, ENTRIES_FILENAME};
+use crate::config::{dotrc_path, expand_tilde, resolve_target, DotEntries, DotRc, ENTRIES_FILENAME};
 
 pub fn init(url: Option<&str>, path: Option<&str>) {
     match url {
@@ -14,7 +14,7 @@ pub fn init(url: Option<&str>, path: Option<&str>) {
 fn init_local(path: Option<&str>) {
     let dest = match path {
         Some(p) => expand_tilde(p),
-        None => expand_tilde("~/.dot"),
+        None => resolve_target(),
     };
 
     if !dest.exists() {
