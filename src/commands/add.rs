@@ -1,4 +1,4 @@
-use crate::config::{dotrc_path, DotEntries, DotRc, expand_tilde};
+use crate::config::{collapse_home, dotrc_path, DotEntries, DotRc, expand_tilde};
 
 pub fn add(path: &str, name: Option<&str>, raw: bool) {
     let source = expand_tilde(path);
@@ -45,8 +45,9 @@ pub fn add(path: &str, name: Option<&str>, raw: bool) {
         return;
     }
 
-    // Store the original source path (unexpanded) so it stays portable.
-    entries.add_entry(&entry_name, path);
+    // Collapse home dir to ~/ so the stored path is portable across usernames.
+    let portable_path = collapse_home(&source);
+    entries.add_entry(&entry_name, &portable_path);
 
     if let Err(e) = entries.save() {
         eprintln!("error: failed to save entries.toml: {}", e);

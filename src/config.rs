@@ -96,6 +96,20 @@ impl DotEntries {
     }
 }
 
+/// Collapses the user's home directory prefix back to `~/` for portable storage.
+/// e.g. `C:\Users\linsko\AppData\Local\nvim` → `~/AppData/Local/nvim`
+pub fn collapse_home(path: &std::path::Path) -> String {
+    if let Some(home) = home_dir() {
+        if let Ok(rest) = path.strip_prefix(&home) {
+            let rest_str = rest.to_string_lossy().replace('\\', "/");
+            let rest_str = rest_str.trim_end_matches('/');
+            return format!("~/{}", rest_str);
+        }
+    }
+    let s = path.to_string_lossy().replace('\\', "/");
+    s.trim_end_matches('/').to_string()
+}
+
 /// Expands a leading `~` to the user's home directory.
 pub fn expand_tilde(path: &str) -> PathBuf {
     if path == "~" {
