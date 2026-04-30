@@ -26,7 +26,7 @@ pub fn apply() {
             continue;
         }
 
-        match super::copy_dir_all(&source, dest) {
+        match super::copy_entry(&source, dest) {
             Ok(()) => println!("applied '{}': {} -> {}", name, source.display(), dest.display()),
             Err(e) => eprintln!("error: failed to apply '{}': {}", name, e),
         }

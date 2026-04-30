@@ -26,7 +26,7 @@ pub fn sync() {
 
         let dest = dotrc.target.join(name);
 
-        match super::copy_dir_all(source, &dest) {
+        match super::copy_entry(source, &dest) {
             Ok(()) => println!("synced '{}': {} -> {}", name, source.display(), dest.display()),
             Err(e) => eprintln!("error: failed to sync '{}': {}", name, e),
         }

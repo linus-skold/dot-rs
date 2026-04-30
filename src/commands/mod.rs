@@ -8,7 +8,20 @@ pub mod sync;
 use std::fs;
 use std::path::Path;
 
-pub(super) fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
+/// Copies `src` to `dst`, handling both files and directories.
+pub(super) fn copy_entry(src: &Path, dst: &Path) -> std::io::Result<()> {
+    if src.is_dir() {
+        copy_dir_all(src, dst)
+    } else {
+        if let Some(parent) = dst.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::copy(src, dst)?;
+        Ok(())
+    }
+}
+
+fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
     fs::create_dir_all(dst)?;
     for entry in fs::read_dir(src)? {
         let entry = entry?;

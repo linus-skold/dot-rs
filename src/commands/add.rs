@@ -7,10 +7,6 @@ pub fn add(path: &str, name: Option<&str>) {
         eprintln!("error: path does not exist: {}", source.display());
         std::process::exit(1);
     }
-    if !source.is_dir() {
-        eprintln!("error: path is not a directory: {}", source.display());
-        std::process::exit(1);
-    }
 
     let entry_name = name
         .map(|n| n.to_string())
@@ -39,7 +35,7 @@ pub fn add(path: &str, name: Option<&str>) {
 
     let dest = dotrc.target.join(&entry_name);
 
-    if let Err(e) = super::copy_dir_all(&source, &dest) {
+    if let Err(e) = super::copy_entry(&source, &dest) {
         eprintln!("error: failed to copy '{}' to '{}': {}", source.display(), dest.display(), e);
         std::process::exit(1);
     }
