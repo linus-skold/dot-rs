@@ -1,6 +1,6 @@
 use crate::config::{dotrc_path, DotEntries, DotRc, expand_tilde};
 
-pub fn add(path: &str, name: Option<&str>) {
+pub fn add(path: &str, name: Option<&str>, raw: bool) {
     let source = expand_tilde(path);
 
     if !source.exists() {
@@ -23,6 +23,18 @@ pub fn add(path: &str, name: Option<&str>) {
         std::process::exit(1);
     });
 
+    let dest = dotrc.target.join(&entry_name);
+
+    if let Err(e) = super::copy_entry(&source, &dest) {
+        eprintln!("error: failed to copy '{}' to '{}': {}", source.display(), dest.display(), e);
+        std::process::exit(1);
+    }
+
+    if raw {
+        println!("copied '{}' -> {} (raw, not tracked)", entry_name, dest.display());
+        return;
+    }
+
     let mut entries = DotEntries::load(&dotrc.entries_path()).unwrap_or_else(|e| {
         eprintln!("error: failed to load entries.toml: {}", e);
         std::process::exit(1);
@@ -31,13 +43,6 @@ pub fn add(path: &str, name: Option<&str>) {
     if entries.is_tracked(&entry_name) {
         eprintln!("warning: '{}' is already tracked in entries.toml — skipping", entry_name);
         return;
-    }
-
-    let dest = dotrc.target.join(&entry_name);
-
-    if let Err(e) = super::copy_entry(&source, &dest) {
-        eprintln!("error: failed to copy '{}' to '{}': {}", source.display(), dest.display(), e);
-        std::process::exit(1);
     }
 
     // Store the original source path (unexpanded) so it stays portable.

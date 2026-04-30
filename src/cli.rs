@@ -11,11 +11,14 @@ pub struct Cli {
 pub enum Commands {
     /// Track a new config folder
     Add {
-        /// Path to the folder to track (e.g. ~/AppData/Roaming/nvim)
+        /// Path to the folder or file to track (e.g. ~/AppData/Roaming/nvim)
         path: String,
-        /// Name for this entry in .dotrc (defaults to folder name)
+        /// Name for this entry in entries.toml (defaults to folder/file name)
         #[arg(short, long)]
         name: Option<String>,
+        /// Copy into the dotfiles folder without creating an entry in entries.toml
+        #[arg(long)]
+        raw: bool,
     },
     /// Remove a tracked config
     Remove {
