@@ -6,6 +6,7 @@ pub mod init;
 pub mod remove;
 pub mod sync;
 
+use crate::output::warning;
 use std::fs;
 use std::path::Path;
 
@@ -40,35 +41,23 @@ fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
             match resolved {
                 Ok(real) if real.is_dir() => {
                     if let Err(e) = copy_dir_all(&real, &dst_path) {
-                        eprintln!(
-                            "warning: skipping symlink '{}': {}",
-                            entry.path().display(), e
-                        );
+                        warning!("skipping symlink '{}': {}", entry.path().display(), e);
                     }
                 }
                 Ok(real) => {
                     if let Err(e) = fs::copy(&real, &dst_path) {
-                        eprintln!(
-                            "warning: skipping symlink '{}': {}",
-                            entry.path().display(), e
-                        );
+                        warning!("skipping symlink '{}': {}", entry.path().display(), e);
                     }
                 }
                 Err(e) => {
-                    eprintln!(
-                        "warning: skipping unresolvable symlink '{}': {}",
-                        entry.path().display(), e
-                    );
+                    warning!("skipping unresolvable symlink '{}': {}", entry.path().display(), e);
                 }
             }
         } else if file_type.is_dir() {
             copy_dir_all(&entry.path(), &dst_path)?;
         } else {
             if let Err(e) = fs::copy(entry.path(), &dst_path) {
-                eprintln!(
-                    "warning: skipping '{}': {}",
-                    entry.path().display(), e
-                );
+                warning!("skipping '{}': {}", entry.path().display(), e);
             }
         }
     }

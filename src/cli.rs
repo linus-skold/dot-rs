@@ -32,6 +32,9 @@ pub enum Commands {
         /// Apply all entries without prompting
         #[arg(short, long)]
         all: bool,
+        /// Overwrite targets even if they have local changes
+        #[arg(short, long)]
+        force: bool,
     },
     Diff,
     Push,

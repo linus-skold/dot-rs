@@ -1,6 +1,9 @@
 use crate::config::{resolve_target, DotEntries, ENTRIES_FILENAME};
+use crate::output::{error, info, success, warning};
 use dialoguer::{theme::Theme, MultiSelect};
 use std::fmt;
+use std::path::Path;
+use std::process::Command;
 
 struct CircleTheme;
 
@@ -26,12 +29,31 @@ impl Theme for CircleTheme {
     }
 }
 
-pub fn apply(names: &[String], all: bool) {
+/// Returns `true` if `tracked` and `dest` differ, per `git diff --no-index`.
+/// Missing files or comparison errors are treated as "no local changes".
+fn has_local_changes(tracked: &Path, dest: &Path) -> bool {
+    if !tracked.exists() || !dest.exists() {
+        return false;
+    }
+
+    Command::new("git")
+        .arg("diff")
+        .arg("--no-index")
+        .arg("--quiet")
+        .arg("--")
+        .arg(tracked)
+        .arg(dest)
+        .status()
+        .map(|status| status.code() == Some(1))
+        .unwrap_or(false)
+}
+
+pub fn apply(names: &[String], all: bool, force: bool) {
     let target = resolve_target();
     let entries_path = target.join(ENTRIES_FILENAME);
 
     let entries = DotEntries::load(&entries_path).unwrap_or_else(|e| {
-        eprintln!("error: failed to load entries.toml: {}", e);
+        error!("failed to load entries.toml: {}", e);
         std::process::exit(1);
     });
 
@@ -39,7 +61,7 @@ pub fn apply(names: &[String], all: bool) {
     items.sort_by(|a, b| a.0.cmp(&b.0));
 
     if items.is_empty() {
-        println!("nothing to apply — no entries in {}", entries_path.display());
+        info!("nothing to apply — no entries in {}", entries_path.display());
         return;
     }
 
@@ -50,7 +72,7 @@ pub fn apply(names: &[String], all: bool) {
             .filter_map(|name| match items.get(name) {
                 Some(dest) => Some((name.clone(), dest.clone())),
                 None => {
-                    eprintln!("warning: no entry named '{}' in {}", name, entries_path.display());
+                    warning!("no entry named '{}' in {}", name, entries_path.display());
                     None
                 }
             })
@@ -70,17 +92,17 @@ pub fn apply(names: &[String], all: bool) {
             .items(&labels)
             .interact_opt()
             .unwrap_or_else(|e| {
-                eprintln!("error: failed to read selection: {}", e);
+                error!("failed to read selection: {}", e);
                 std::process::exit(1);
             });
 
         let Some(chosen) = chosen else {
-            println!("cancelled");
+            info!("cancelled");
             return;
         };
 
         if chosen.is_empty() {
-            println!("nothing selected — aborting");
+            info!("nothing selected — aborting");
             return;
         }
 
@@ -92,7 +114,7 @@ pub fn apply(names: &[String], all: bool) {
     };
 
     if selected.is_empty() {
-        println!("nothing to apply");
+        info!("nothing to apply");
         return;
     }
 
@@ -100,13 +122,22 @@ pub fn apply(names: &[String], all: bool) {
         let source = target.join(&name);
 
         if !source.exists() {
-            eprintln!("warning: skipping '{}' — dotfiles source does not exist: {}", name, source.display());
+            warning!("skipping '{}' — dotfiles source does not exist: {}", name, source.display());
+            continue;
+        }
+
+        if !force && has_local_changes(&source, dest) {
+            warning!(
+                "skipping '{}' — target has local changes not present in the dotfiles copy: {}",
+                name, dest.display()
+            );
+            warning!("         run 'dot diff' to review, or re-run with --force to overwrite");
             continue;
         }
 
         match super::copy_entry(&source, dest) {
-            Ok(()) => println!("applied '{}': {} -> {}", name, source.display(), dest.display()),
-            Err(e) => eprintln!("error: failed to apply '{}': {}", name, e),
+            Ok(()) => success!("applied '{}': {} -> {}", name, source.display(), dest.display()),
+            Err(e) => error!("failed to apply '{}': {}", name, e),
         }
     }
 }

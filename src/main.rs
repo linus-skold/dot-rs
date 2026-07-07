@@ -4,13 +4,14 @@ use clap::Parser;
 mod cli;
 mod commands;
 mod config;
+mod output;
 
 fn main() {
     let cli = cli::Cli::parse();
     match cli.command {
         cli::Commands::Add { path, name, raw } => commands::add::add(&path, name.as_deref(), raw),
         cli::Commands::Remove { name: _ } => println!("remove: not yet implemented"),
-        cli::Commands::Apply { names, all } => commands::apply::apply(&names, all),
+        cli::Commands::Apply { names, all, force } => commands::apply::apply(&names, all, force),
         cli::Commands::Diff => commands::diff::diff(),
         cli::Commands::Push => println!("push: not yet implemented"),
         cli::Commands::Sync => commands::sync::sync(),
