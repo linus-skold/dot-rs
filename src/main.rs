@@ -11,7 +11,7 @@ fn main() {
         cli::Commands::Add { path, name, raw } => commands::add::add(&path, name.as_deref(), raw),
         cli::Commands::Remove { name: _ } => println!("remove: not yet implemented"),
         cli::Commands::Apply { names, all } => commands::apply::apply(&names, all),
-        cli::Commands::Diff => println!("diff: not yet implemented"),
+        cli::Commands::Diff => commands::diff::diff(),
         cli::Commands::Push => println!("push: not yet implemented"),
         cli::Commands::Sync => commands::sync::sync(),
         cli::Commands::Init { url, path } => commands::init::init(url.as_deref(), path.as_deref()),
