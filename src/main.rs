@@ -10,7 +10,7 @@ fn main() {
     match cli.command {
         cli::Commands::Add { path, name, raw } => commands::add::add(&path, name.as_deref(), raw),
         cli::Commands::Remove { name: _ } => println!("remove: not yet implemented"),
-        cli::Commands::Apply => commands::apply::apply(),
+        cli::Commands::Apply { names, all } => commands::apply::apply(&names, all),
         cli::Commands::Diff => println!("diff: not yet implemented"),
         cli::Commands::Push => println!("push: not yet implemented"),
         cli::Commands::Sync => commands::sync::sync(),

@@ -26,7 +26,13 @@ pub enum Commands {
         name: String,
     },
     /// Apply configurations based on .dotrc
-    Apply,
+    Apply {
+        /// Only apply entries with these names (skips the interactive picker)
+        names: Vec<String>,
+        /// Apply all entries without prompting
+        #[arg(short, long)]
+        all: bool,
+    },
     Diff,
     Push,
     /// Sync tracked configs from their source locations into the dotfiles folder
