@@ -87,6 +87,11 @@ impl DotEntries {
         self.data.contains_key(name)
     }
 
+    /// Removes an entry, returning `true` if it was tracked.
+    pub fn remove_entry(&mut self, name: &str) -> bool {
+        self.data.remove(name).is_some()
+    }
+
     pub fn add_entry(&mut self, name: &str, source_path: &str) {
         let mut entry = toml::Table::new();
         #[cfg(target_os = "windows")]

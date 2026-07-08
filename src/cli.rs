@@ -20,7 +20,7 @@ pub enum Commands {
         #[arg(long)]
         raw: bool,
     },
-    /// Remove a tracked config (not yet implemented)
+    /// Remove a tracked config
     Remove {
         /// Name of the config entry to remove
         name: String,

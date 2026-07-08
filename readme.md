@@ -70,7 +70,7 @@ Shows differences between the tracked source files and the copies stored in the 
 
 ### `dot remove <name>`
 
-**Not yet implemented** — currently a no-op stub.
+Untracks an entry: removes it from `entries.toml` and deletes its copy from the dotfiles folder. The original file at the source location is left untouched.
 
 ### `dot push`
 
