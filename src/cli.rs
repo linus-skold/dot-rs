@@ -40,6 +40,17 @@ pub enum Commands {
     Diff,
     /// Push the dotfiles repo upstream (runs `git push` in the target folder)
     Push,
+    /// Pull the dotfiles repo (git pull) and apply the updated entries
+    Pull {
+        /// Only apply entries with these names (skips the interactive picker)
+        names: Vec<String>,
+        /// Apply all entries without prompting
+        #[arg(short, long)]
+        all: bool,
+        /// Overwrite targets even if they have local changes
+        #[arg(short, long)]
+        force: bool,
+    },
     /// Sync tracked configs from their source locations into the dotfiles folder
     Sync,
     /// Initialize a dotfiles repo, optionally from a git URL

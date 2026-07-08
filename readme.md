@@ -76,6 +76,15 @@ Untracks an entry: removes it from `entries.toml` and deletes its copy from the 
 
 Runs `git push` in the dotfiles target folder. Assumes you've already committed your changes and configured a remote (e.g. via `dot init <git-url>` or `git remote add` yourself).
 
+### `dot pull [names...] [--all] [--force]`
+
+Runs `git pull` in the dotfiles target folder, then runs `apply` — the two-step "get the latest dotfiles and install them" command for a fresh or already-cloned machine. Takes the same arguments as `apply` (interactive picker by default, or `names`/`--all`/`--force`), so it works from whatever directory you happen to be in as long as `DOTCONF`/`~/.dotrc` points at the repo.
+
+```
+dot pull                 # git pull, then interactive picker
+dot pull --all           # git pull, then apply everything
+```
+
 ## Config files
 
 - `~/.dotrc` — single line pointing at your dotfiles target folder

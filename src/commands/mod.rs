@@ -3,6 +3,7 @@ pub mod add;
 pub mod apply;
 pub mod diff;
 pub mod init;
+pub mod pull;
 pub mod push;
 pub mod remove;
 pub mod sync;
