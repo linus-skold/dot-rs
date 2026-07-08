@@ -38,7 +38,7 @@ pub enum Commands {
     },
     /// Show differences between tracked entries and their source locations
     Diff,
-    /// Push the dotfiles repo upstream (not yet implemented)
+    /// Push the dotfiles repo upstream (runs `git push` in the target folder)
     Push,
     /// Sync tracked configs from their source locations into the dotfiles folder
     Sync,

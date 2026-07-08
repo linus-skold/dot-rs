@@ -74,7 +74,7 @@ Untracks an entry: removes it from `entries.toml` and deletes its copy from the 
 
 ### `dot push`
 
-**Not yet implemented** — currently a no-op stub. Intended to push the dotfiles repo upstream.
+Runs `git push` in the dotfiles target folder. Assumes you've already committed your changes and configured a remote (e.g. via `dot init <git-url>` or `git remote add` yourself).
 
 ## Config files
 
