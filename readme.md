@@ -6,7 +6,7 @@ A minimal, cross-platform config & dotfiles manager written in Rust.
 
 ## How it works
 
-`dot` keeps a central **target folder** (your dotfiles repo) containing the actual config files, plus an `entries.toml` manifest that maps a short name to the original location the file/folder came from on your machine (per-OS, so the same manifest works on Windows and Unix). Commands copy files between that target folder and their real locations — nothing is symlinked.
+`dot` keeps a central **target folder** (your dotfiles repo) containing the actual config files, plus an `entries.toml` manifest that maps a short name to the original location the file/folder came from on your machine (per-OS, so the same manifest works on Windows and Unix). Commands copy files between that target folder and their real locations, nothing is symlinked.
 
 The target folder is resolved in this order:
 
@@ -33,16 +33,20 @@ dot pull [names...] [--all] [--force]    # git pull, then apply
 cargo install --git https://github.com/linus-skold/dot-rs
 ```
 
-This builds the `dot` binary.
+This pulls and builds the `dot` binary from github.
 
 ## Getting started
 
 ```
-dot init                       # create a local dotfiles folder + ~/.dotrc + entries.toml
+dot init                        # create a local dotfiles folder + ~/.dotrc + entries.toml
+dot init --path <path>          # same, but use <path> as the target folder instead of the default
 dot init <git-url>              # or clone an existing dotfiles repo instead
+dot init <git-url> --path <path>
 ```
 
 `init` also runs `git init` (or `git clone`) in the target folder so you can version your dotfiles from the start.
+
+Every `dot init` (with or without `--path`, with or without a URL) also writes `~/.dotrc` pointing at whatever target folder it just used — this is what lets later commands find your dotfiles folder without `DOTCONF` set. `--path` only changes *where the target folder is*; it has no effect on whether `.dotrc` gets written. The one exception is if `~/.dotrc` already exists — `init` never overwrites it, so re-running `init` (e.g. to add a second dotfiles folder via `--path`) leaves your existing `.dotrc` pointing at the original target.
 
 ## Commands
 

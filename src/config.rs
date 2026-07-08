@@ -44,10 +44,11 @@ impl DotRc {
         Ok(Self { path: path.to_path_buf(), target, raw })
     }
 
-    pub fn new_default(path: &Path) -> Self {
-        let raw = "~/.dot/".to_string();
-        let target = expand_tilde(&raw);
-        Self { path: path.to_path_buf(), target, raw }
+    /// Creates a `.dotrc` pointing at `raw` (stored as-is, so pass a portable
+    /// path such as one produced by [`collapse_home`]).
+    pub fn new(path: &Path, raw: &str) -> Self {
+        let target = expand_tilde(raw);
+        Self { path: path.to_path_buf(), target, raw: raw.to_string() }
     }
 
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {

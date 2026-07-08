@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::config::{dotrc_path, expand_tilde, resolve_target, DotEntries, DotRc, ENTRIES_FILENAME};
+use crate::config::{collapse_home, dotrc_path, expand_tilde, resolve_target, DotEntries, DotRc, ENTRIES_FILENAME};
 use crate::output::{error, info, success};
 
 pub fn init(url: Option<&str>, path: Option<&str>) {
@@ -51,9 +51,9 @@ fn create_dotrc_and_entries(target: &PathBuf) {
     if dotrc_path.exists() {
         info!("~/.dotrc already present — skipping");
     } else {
-        // Store the raw unexpanded path so it stays portable
-        let raw = format!("{}/", target.display());
-        DotRc::new_default(&dotrc_path).save().unwrap_or_else(|e| {
+        // Store the collapsed ~/-relative path so it stays portable across usernames.
+        let raw = format!("{}/", collapse_home(target));
+        DotRc::new(&dotrc_path, &raw).save().unwrap_or_else(|e| {
             error!("failed to write ~/.dotrc: {}", e);
             std::process::exit(1);
         });
