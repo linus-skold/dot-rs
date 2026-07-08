@@ -20,12 +20,12 @@ pub enum Commands {
         #[arg(long)]
         raw: bool,
     },
-    /// Remove a tracked config
+    /// Remove a tracked config (not yet implemented)
     Remove {
         /// Name of the config entry to remove
         name: String,
     },
-    /// Apply configurations based on .dotrc
+    /// Apply tracked entries from entries.toml to their source locations
     Apply {
         /// Only apply entries with these names (skips the interactive picker)
         names: Vec<String>,
@@ -36,7 +36,9 @@ pub enum Commands {
         #[arg(short, long)]
         force: bool,
     },
+    /// Show differences between tracked entries and their source locations
     Diff,
+    /// Push the dotfiles repo upstream (not yet implemented)
     Push,
     /// Sync tracked configs from their source locations into the dotfiles folder
     Sync,

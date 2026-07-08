@@ -70,11 +70,11 @@ Shows differences between the tracked source files and the copies stored in the 
 
 ### `dot remove <name>`
 
-Removes an entry from `entries.toml` (stops tracking it).
+**Not yet implemented** — currently a no-op stub.
 
 ### `dot push`
 
-Reserved for pushing the dotfiles repo upstream.
+**Not yet implemented** — currently a no-op stub. Intended to push the dotfiles repo upstream.
 
 ## Config files
 
