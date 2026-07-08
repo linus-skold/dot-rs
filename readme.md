@@ -14,6 +14,19 @@ The target folder is resolved in this order:
 2. `~/.dotrc` file (a single line containing the path), if present
 3. `~/.dot` as the default
 
+## Cheatsheet
+
+```
+dot init [<git-url>] [--path <path>]     # create/clone a dotfiles repo
+dot add <path> [--name <name>] [--raw]   # track a file/folder
+dot remove <name>                        # untrack a file/folder
+dot sync                                 # source -> dotfiles folder
+dot diff                                 # show source vs. dotfiles folder differences
+dot apply [names...] [--all] [--force]   # dotfiles folder -> source
+dot push                                 # git push the dotfiles repo
+dot pull [names...] [--all] [--force]    # git pull, then apply
+```
+
 ## Install
 
 ```
