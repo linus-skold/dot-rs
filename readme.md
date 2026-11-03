@@ -20,11 +20,12 @@ The target folder is resolved in this order:
 dot init [<git-url>] [--path <path>]     # create/clone a dotfiles repo
 dot add <path> [--name <name>] [--raw]   # track a file/folder
 dot remove <name>                        # untrack a file/folder
-dot sync                                 # source -> dotfiles folder
+dot sync [names...]                      # source -> dotfiles folder (honours .dotignore)
+dot ignore <pattern>... [--list]         # add gitignore-style patterns to <dotfiles>/.dotignore
 dot diff                                 # show source vs. dotfiles folder differences
-dot apply [names...] [--all] [--force]   # dotfiles folder -> source
+dot apply [names...] [--all] [--force] [--link]  # dotfiles folder -> source
 dot push                                 # git push the dotfiles repo
-dot pull [names...] [--all] [--force]    # git pull, then apply
+dot pull [names...] [--all] [--force] [--link]   # git pull, then apply
 ```
 
 ## Install
