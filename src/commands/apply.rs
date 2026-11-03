@@ -48,7 +48,7 @@ fn has_local_changes(tracked: &Path, dest: &Path) -> bool {
         .unwrap_or(false)
 }
 
-pub fn apply(names: &[String], all: bool, force: bool) {
+pub fn apply(names: &[String], all: bool, force: bool, link: bool) {
     let target = resolve_target();
     let entries_path = target.join(ENTRIES_FILENAME);
 
@@ -118,11 +118,18 @@ pub fn apply(names: &[String], all: bool, force: bool) {
         return;
     }
 
+    let ignore = super::load_ignore(&target);
+
     for (name, dest) in &selected {
-        let source = target.join(&name);
+        let source = target.join(name);
 
         if !source.exists() {
             warning!("skipping '{}' — dotfiles source does not exist: {}", name, source.display());
+            continue;
+        }
+
+        if link && super::is_link_to(dest, &source) {
+            info!("'{}' already linked: {}", name, dest.display());
             continue;
         }
 
@@ -135,9 +142,96 @@ pub fn apply(names: &[String], all: bool, force: bool) {
             continue;
         }
 
-        match super::copy_entry(&source, dest) {
+        if link {
+            match link_entry(&source, dest) {
+                Ok(()) => success!("linked '{}': {} -> {}", name, dest.display(), source.display()),
+                Err(e) => {
+                    error!("failed to link '{}': {}", name, e);
+                    #[cfg(windows)]
+                    error!(
+                        "         creating symlinks on Windows needs Developer Mode or an elevated shell; \
+                         enable Developer Mode (Settings > System > For developers), run as administrator, \
+                         or use 'dot apply' without --link"
+                    );
+                }
+            }
+            continue;
+        }
+
+        if super::is_ignored(ignore.as_ref(), Path::new(name), source.is_dir()) {
+            info!("skipping '{}' — ignored by .dotignore", name);
+            continue;
+        }
+        // Never copy through a link that points back into the repo: replace it with a real copy.
+
+        if super::is_link_to(dest, &source)
+            && let Err(e) = super::remove_path(dest)
+        {
+            error!("failed to replace link '{}': {}", dest.display(), e);
+            continue;
+        }
+
+        match super::copy_entry_filtered(&source, dest, ignore.as_ref(), Path::new(name)) {
             Ok(()) => success!("applied '{}': {} -> {}", name, source.display(), dest.display()),
             Err(e) => error!("failed to apply '{}': {}", name, e),
+        }
+    }
+}
+
+#[cfg(windows)]
+fn make_symlink(source: &Path, dest: &Path) -> std::io::Result<()> {
+    if source.is_dir() {
+        std::os::windows::fs::symlink_dir(source, dest)
+    } else {
+        std::os::windows::fs::symlink_file(source, dest)
+    }
+}
+
+#[cfg(unix)]
+fn make_symlink(source: &Path, dest: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(source, dest)
+}
+
+/// Replaces `dest` with a symlink to `source`. An existing `dest` is first renamed to
+/// a `.dot-bak` sibling, restored if linking fails, and deleted once linking succeeds.
+fn link_entry(source: &Path, dest: &Path) -> std::io::Result<()> {
+    let source = std::path::absolute(source)?;
+    if let Some(parent) = dest.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let backup = if dest.symlink_metadata().is_ok() {
+        let mut name = dest.file_name().unwrap_or_default().to_os_string();
+        name.push(".dot-bak");
+        let backup = dest.with_file_name(name);
+        if backup.symlink_metadata().is_ok() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                format!("backup path already exists, remove it first: {}", backup.display()),
+            ));
+        }
+        std::fs::rename(dest, &backup)?;
+        Some(backup)
+    } else {
+        None
+    };
+
+    match make_symlink(&source, dest) {
+        Ok(()) => {
+            if let Some(backup) = backup
+                && let Err(e) = super::remove_path(&backup)
+            {
+                warning!("linked, but failed to remove backup {}: {}", backup.display(), e);
+            }
+            Ok(())
+        }
+        Err(e) => {
+            if let Some(backup) = backup
+                && let Err(re) = std::fs::rename(&backup, dest)
+            {
+                warning!("failed to restore {} from {}: {}", dest.display(), backup.display(), re);
+            }
+            Err(e)
         }
     }
 }

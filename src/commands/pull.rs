@@ -4,7 +4,7 @@ use crate::config::resolve_target;
 use crate::output::error;
 
 /// Runs `git pull` in the dotfiles target folder, then applies the updated entries.
-pub fn pull(names: &[String], all: bool, force: bool) {
+pub fn pull(names: &[String], all: bool, force: bool, link: bool) {
     let target = resolve_target();
 
     let status = Command::new("git")
@@ -20,5 +20,5 @@ pub fn pull(names: &[String], all: bool, force: bool) {
         std::process::exit(1);
     }
 
-    super::apply::apply(names, all, force);
+    super::apply::apply(names, all, force, link);
 }

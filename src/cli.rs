@@ -35,6 +35,10 @@ pub enum Commands {
         /// Overwrite targets even if they have local changes
         #[arg(short, long)]
         force: bool,
+        /// Symlink targets to the dotfiles copy instead of copying. On Windows this needs
+        /// Developer Mode enabled or an elevated (administrator) shell
+        #[arg(short, long)]
+        link: bool,
     },
     /// Show differences between tracked entries and their source locations
     Diff,
@@ -50,9 +54,33 @@ pub enum Commands {
         /// Overwrite targets even if they have local changes
         #[arg(short, long)]
         force: bool,
+        /// Symlink targets to the dotfiles copy instead of copying. On Windows this needs
+        /// Developer Mode enabled or an elevated (administrator) shell
+        #[arg(short, long)]
+        link: bool,
     },
     /// Sync tracked configs from their source locations into the dotfiles folder
-    Sync,
+    #[command(long_about = "Sync tracked configs from their source locations into the dotfiles folder.\n\n\
+With no names, every entry in entries.toml is synced. Give one or more entry names to sync only those.\n\n\
+Paths matching patterns in <dotfiles folder>/.dotignore (gitignore syntax, relative to the repo root; \
+see `dot ignore --help`) are skipped. Entries that are symlinked to the dotfiles folder (dot apply --link) are already in sync and are skipped.\n\n\
+Examples:\n  dot sync                  sync all entries\n  dot sync nvim wezterm     sync only nvim and wezterm")]
+    Sync {
+        /// Only sync entries with these names (default: all entries)
+        names: Vec<String>,
+    },
+    /// Ignore paths when syncing/applying (appends to <dotfiles folder>/.dotignore)
+    #[command(long_about = "Add patterns to <dotfiles folder>/.dotignore (next to entries.toml).\n\n\
+The file uses gitignore syntax and patterns are relative to the dotfiles repo root, so an entry's files are addressed as <entry>/<path>. \
+Ignored paths are skipped by `dot sync` and by copy-mode `dot apply` (not by `apply --link`). Duplicate patterns are not added twice.\n\n\
+Examples:\n  dot ignore nvim/lazy-lock.json\n  dot ignore '*.log' '**/cache/'\n  dot ignore --list")]
+    Ignore {
+        /// gitignore-style patterns, relative to the dotfiles repo root
+        patterns: Vec<String>,
+        /// Print the current patterns instead of adding
+        #[arg(long)]
+        list: bool,
+    },
     /// Initialize a dotfiles repo, optionally from a git URL
     Init {
         /// Git repository URL to clone (omit to just create local config)
